@@ -8,7 +8,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
-
+## Problem 1
 ```{r}
 # Read file into the project
 file = read_csv("file/homicide-data.csv") %>% 
@@ -88,5 +88,61 @@ glm_result %>%
   theme_bw() +
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 90, hjust = 1)) 
+```
+
+## Problem 2
+### Data cleaning
+```{r}
+birth_data = read_csv("file/birthweight.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(babysex = as.factor(babysex),
+         frace = as.factor(frace),
+         malform = as.factor(malform),
+         mrace = as.factor(mrace))
+```
+
+### Fit in my model
+First, read the file into R project and explore the correlation using `cor()`.
+```{r}
+read_csv("file/birthweight.csv") %>% 
+  select(-pnumlbw, -pnumsga) %>% 
+  cor() %>% 
+  broom::tidy()
+```
+
+Then, I try to fit all the variables to figure out the fit.
+```{r}
+fit_all = 
+  lm(bwt ~ ., data = birth_data)
+
+summary(fit_all)
+```
+The adjusted r square is 0.717, which means it is a good fit. However, the variables are too many so it would have the chance to be over fitted. So, I will choose the variable according to the p value. 
+
+Then, I try to fit in the model with p value extremely equal to zero. 
+```{r}
+fit_model1 = lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + smoken 
+                , data = birth_data)
+
+summary(fit_model1)
+```
+We could see that the adjusted R square decreases to 0.697. So, I would add some more variable that p value less than 0.01.
+
+```{r}
+fit_model2 = lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + smoken 
+                , data = birth_data)
+
+summary(fit_model2)
+```
+
+The adjusted R square increases to 0.7138, so model 2 is better than model 1. 
+
+Then, I will try to add more variable which p value is less than 0.05.
+
+```{r}
+fit_model3 = lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken 
+                , data = birth_data)
+
+summary(fit_model3)
 ```
 

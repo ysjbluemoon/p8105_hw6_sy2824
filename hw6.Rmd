@@ -95,8 +95,10 @@ glm_result %>%
 ## Problem 2
 ### Data cleaning
 ```{r}
+# Read data into project and data cleaning
 birth_data = read_csv("file/birthweight.csv") %>% 
   janitor::clean_names() %>% 
+  # mutating the elements into factor since they are categorical data
   mutate(babysex = as.factor(babysex),
          frace = as.factor(frace),
          malform = as.factor(malform),
@@ -106,6 +108,7 @@ birth_data = read_csv("file/birthweight.csv") %>%
 ### Fit in my model
 First, read the file into R project and explore the correlation using `cor()`.
 ```{r}
+# Run cor() to have a brief overview of the correlation of predictors.
 read_csv("file/birthweight.csv") %>% 
   select(-pnumlbw, -pnumsga) %>% 
   cor() %>% 
@@ -155,23 +158,25 @@ fit_model = fit_model3
 ```
 
 ### Ploting
+show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot
 ```{r}
-modelr::add_residuals(birth_data, fit_model)
-modelr::add_predictions(birth_data, fit_model)
-
+# plot reseduals against fitted values
 birth_data %>% 
   modelr::add_residuals(fit_model) %>% 
   modelr::add_predictions(fit_model) %>% 
   ggplot(aes(x = pred, y = resid)) +
-   geom_point(alpha = 0.3) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
   labs(
-      x = "Predicted Value",
+      x = "Fitted Value",
       y = "Residual",
       title = "Model residuals against predictied values"
   )
 ```
+As shown in the plot, my model is not performing very well when the predicted value is less than 200, where the residuals are pretty high. However, as the predicted value grows, the residuals become steady and decreases. When the predicted valus is around 2000 and 4000, the residuals are gathered around 0, indicating the model fits well in this range. 
 
 ### Comparing two model
+One using length at birth and gestational age as predictors (main effects only)
 ```{r}
 fit_compare1 = 
   lm(bwt ~  blength + gaweeks, data = birth_data)
@@ -179,6 +184,7 @@ fit_compare1 =
 summary(fit_compare1)
 ```
 
+One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
 ```{r}
 fit_compare2 =
   lm(bwt ~  bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = birth_data)
@@ -188,11 +194,13 @@ summary(fit_compare2)
 
 Use cross validation to compare three models.
 ```{r}
+# use cross_mc to form the train and test dataset.
 cv_df = 
   crossv_mc(birth_data, 100) %>% 
   mutate(train = map(train, as_tibble),
          test = map(test, as_tibble))
 
+# use map() to run the cross validation process
 cv_df = 
   cv_df %>% 
   mutate(fit_model    = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken, data = .x)),
@@ -210,6 +218,11 @@ cv_df %>%
   gather(key = model, value = rmse) %>% 
   mutate(model = str_replace(model, "rmse_", ""),
          model = fct_inorder(model)) %>% 
-  ggplot(aes(x = model, y = rmse)) + geom_violin()
+  ggplot(aes(x = model, y = rmse)) + 
+  geom_violin() +
+  labs(title = "Violin plots of RMSE", 
+       x = "Model", 
+       y = "RMSE")
 ```
 
+As the violin plot shows, model 1 has the highest RMSE since the model predictors are too simple. For model 2, the RMSE seems lower than the first model which matches the result that the model adds the interaction of three prodictors. The model I fit in preforms better because it has the lowest RMSE.

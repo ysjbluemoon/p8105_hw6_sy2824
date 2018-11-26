@@ -118,8 +118,10 @@ Problem 2
 ### Data cleaning
 
 ``` r
+# Read data into project and data cleaning
 birth_data = read_csv("file/birthweight.csv") %>% 
   janitor::clean_names() %>% 
+  # mutating the elements into factor since they are categorical data
   mutate(babysex = as.factor(babysex),
          frace = as.factor(frace),
          malform = as.factor(malform),
@@ -141,6 +143,7 @@ birth_data = read_csv("file/birthweight.csv") %>%
 First, read the file into R project and explore the correlation using `cor()`.
 
 ``` r
+# Run cor() to have a brief overview of the correlation of predictors.
 read_csv("file/birthweight.csv") %>% 
   select(-pnumlbw, -pnumsga) %>% 
   cor() %>% 
@@ -357,64 +360,30 @@ fit_model = fit_model3
 
 ### Ploting
 
-``` r
-modelr::add_residuals(birth_data, fit_model)
-```
-
-    ## # A tibble: 4,342 x 21
-    ##    babysex bhead blength   bwt delwt fincome frace gaweeks malform menarche
-    ##    <fct>   <int>   <int> <int> <int>   <int> <fct>   <dbl> <fct>      <int>
-    ##  1 2          34      51  3629   177      35 1        39.9 0             13
-    ##  2 1          34      48  3062   156      65 2        25.9 0             14
-    ##  3 2          36      50  3345   148      85 1        39.9 0             12
-    ##  4 1          34      52  3062   157      55 1        40   0             14
-    ##  5 2          34      52  3374   156       5 1        41.6 0             13
-    ##  6 1          33      52  3374   129      55 1        40.7 0             12
-    ##  7 2          33      46  2523   126      96 2        40.3 0             14
-    ##  8 2          33      49  2778   140       5 1        37.4 0             12
-    ##  9 1          36      52  3515   146      85 1        40.3 0             11
-    ## 10 1          33      50  3459   169      75 2        40.7 0             12
-    ## # ... with 4,332 more rows, and 11 more variables: mheight <int>,
-    ## #   momage <int>, mrace <fct>, parity <int>, pnumlbw <int>, pnumsga <int>,
-    ## #   ppbmi <dbl>, ppwt <int>, smoken <dbl>, wtgain <int>, resid <dbl>
+show a plot of model residuals against fitted values – use add\_predictions and add\_residuals in making this plot
 
 ``` r
-modelr::add_predictions(birth_data, fit_model)
-```
-
-    ## # A tibble: 4,342 x 21
-    ##    babysex bhead blength   bwt delwt fincome frace gaweeks malform menarche
-    ##    <fct>   <int>   <int> <int> <int>   <int> <fct>   <dbl> <fct>      <int>
-    ##  1 2          34      51  3629   177      35 1        39.9 0             13
-    ##  2 1          34      48  3062   156      65 2        25.9 0             14
-    ##  3 2          36      50  3345   148      85 1        39.9 0             12
-    ##  4 1          34      52  3062   157      55 1        40   0             14
-    ##  5 2          34      52  3374   156       5 1        41.6 0             13
-    ##  6 1          33      52  3374   129      55 1        40.7 0             12
-    ##  7 2          33      46  2523   126      96 2        40.3 0             14
-    ##  8 2          33      49  2778   140       5 1        37.4 0             12
-    ##  9 1          36      52  3515   146      85 1        40.3 0             11
-    ## 10 1          33      50  3459   169      75 2        40.7 0             12
-    ## # ... with 4,332 more rows, and 11 more variables: mheight <int>,
-    ## #   momage <int>, mrace <fct>, parity <int>, pnumlbw <int>, pnumsga <int>,
-    ## #   ppbmi <dbl>, ppwt <int>, smoken <dbl>, wtgain <int>, pred <dbl>
-
-``` r
+# plot reseduals against fitted values
 birth_data %>% 
   modelr::add_residuals(fit_model) %>% 
   modelr::add_predictions(fit_model) %>% 
   ggplot(aes(x = pred, y = resid)) +
-   geom_point(alpha = 0.3) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
   labs(
-      x = "Predicted Value",
+      x = "Fitted Value",
       y = "Residual",
       title = "Model residuals against predictied values"
   )
 ```
 
-![](hw6_files/figure-markdown_github/unnamed-chunk-13-1.png)
+    ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
+
+![](hw6_files/figure-markdown_github/unnamed-chunk-13-1.png) As shown in the plot, my model is not performing very well when the predicted value is less than 200, where the residuals are pretty high. However, as the predicted value grows, the residuals become steady and decreases. When the predicted valus is around 2000 and 4000, the residuals are gathered around 0, indicating the model fits well in this range.
 
 ### Comparing two model
+
+One using length at birth and gestational age as predictors (main effects only)
 
 ``` r
 fit_compare1 = 
@@ -442,6 +411,8 @@ summary(fit_compare1)
     ## Residual standard error: 333.2 on 4339 degrees of freedom
     ## Multiple R-squared:  0.5769, Adjusted R-squared:  0.5767 
     ## F-statistic:  2958 on 2 and 4339 DF,  p-value: < 2.2e-16
+
+One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
 
 ``` r
 fit_compare2 =
@@ -480,11 +451,13 @@ summary(fit_compare2)
 Use cross validation to compare three models.
 
 ``` r
+# use cross_mc to form the train and test dataset.
 cv_df = 
   crossv_mc(birth_data, 100) %>% 
   mutate(train = map(train, as_tibble),
          test = map(test, as_tibble))
 
+# use map() to run the cross validation process
 cv_df = 
   cv_df %>% 
   mutate(fit_model    = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken, data = .x)),
@@ -503,7 +476,13 @@ cv_df %>%
   gather(key = model, value = rmse) %>% 
   mutate(model = str_replace(model, "rmse_", ""),
          model = fct_inorder(model)) %>% 
-  ggplot(aes(x = model, y = rmse)) + geom_violin()
+  ggplot(aes(x = model, y = rmse)) + 
+  geom_violin() +
+  labs(title = "Violin plots of RMSE", 
+       x = "Model", 
+       y = "RMSE")
 ```
 
 ![](hw6_files/figure-markdown_github/unnamed-chunk-17-1.png)
+
+As the violin plot shows, model 1 has the highest RMSE since the model predictors are too simple. For model 2, the RMSE seems lower than the first model which matches the result that the model adds the interaction of three prodictors. The model I fit in preforms better because it has the lowest RMSE.

@@ -7,6 +7,8 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(modelr)
+library(mgcv)
 ```
 ## Problem 1
 ```{r}
@@ -144,5 +146,70 @@ fit_model3 = lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + pari
                 , data = birth_data)
 
 summary(fit_model3)
+```
+
+The adjusted R square still increases to 0.7142, so model 3 is better than model 2. I will use model 3 as my model.
+
+```{r}
+fit_model = fit_model3
+```
+
+### Ploting
+```{r}
+modelr::add_residuals(birth_data, fit_model)
+modelr::add_predictions(birth_data, fit_model)
+
+birth_data %>% 
+  modelr::add_residuals(fit_model) %>% 
+  modelr::add_predictions(fit_model) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+   geom_point(alpha = 0.3) +
+  labs(
+      x = "Predicted Value",
+      y = "Residual",
+      title = "Model residuals against predictied values"
+  )
+```
+
+### Comparing two model
+```{r}
+fit_compare1 = 
+  lm(bwt ~  blength + gaweeks, data = birth_data)
+
+summary(fit_compare1)
+```
+
+```{r}
+fit_compare2 =
+  lm(bwt ~  bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = birth_data)
+
+summary(fit_compare2)
+```
+
+Use cross validation to compare three models.
+```{r}
+cv_df = 
+  crossv_mc(birth_data, 100) %>% 
+  mutate(train = map(train, as_tibble),
+         test = map(test, as_tibble))
+
+cv_df = 
+  cv_df %>% 
+  mutate(fit_model    = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken, data = .x)),
+         fit_compare1 = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+         fit_compare2 = map(train, ~lm(bwt ~  bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = .x))) %>% 
+  mutate(rmse_model    = map2_dbl(fit_model, test, ~rmse(model = .x, data = .y)),
+         rmse_compare1 = map2_dbl(fit_compare1, test, ~rmse(model = .x, data = .y)),
+         rmse_compare2 = map2_dbl(fit_compare2, test, ~rmse(model = .x, data = .y)))
+```
+
+Plot the standard error of the three models to compare the fitting.
+```{r}
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  gather(key = model, value = rmse) %>% 
+  mutate(model = str_replace(model, "rmse_", ""),
+         model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
 

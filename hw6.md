@@ -348,3 +348,162 @@ summary(fit_model3)
     ## Residual standard error: 273.8 on 4331 degrees of freedom
     ## Multiple R-squared:  0.7148, Adjusted R-squared:  0.7142 
     ## F-statistic:  1086 on 10 and 4331 DF,  p-value: < 2.2e-16
+
+The adjusted R square still increases to 0.7142, so model 3 is better than model 2. I will use model 3 as my model.
+
+``` r
+fit_model = fit_model3
+```
+
+### Ploting
+
+``` r
+modelr::add_residuals(birth_data, fit_model)
+```
+
+    ## # A tibble: 4,342 x 21
+    ##    babysex bhead blength   bwt delwt fincome frace gaweeks malform menarche
+    ##    <fct>   <int>   <int> <int> <int>   <int> <fct>   <dbl> <fct>      <int>
+    ##  1 2          34      51  3629   177      35 1        39.9 0             13
+    ##  2 1          34      48  3062   156      65 2        25.9 0             14
+    ##  3 2          36      50  3345   148      85 1        39.9 0             12
+    ##  4 1          34      52  3062   157      55 1        40   0             14
+    ##  5 2          34      52  3374   156       5 1        41.6 0             13
+    ##  6 1          33      52  3374   129      55 1        40.7 0             12
+    ##  7 2          33      46  2523   126      96 2        40.3 0             14
+    ##  8 2          33      49  2778   140       5 1        37.4 0             12
+    ##  9 1          36      52  3515   146      85 1        40.3 0             11
+    ## 10 1          33      50  3459   169      75 2        40.7 0             12
+    ## # ... with 4,332 more rows, and 11 more variables: mheight <int>,
+    ## #   momage <int>, mrace <fct>, parity <int>, pnumlbw <int>, pnumsga <int>,
+    ## #   ppbmi <dbl>, ppwt <int>, smoken <dbl>, wtgain <int>, resid <dbl>
+
+``` r
+modelr::add_predictions(birth_data, fit_model)
+```
+
+    ## # A tibble: 4,342 x 21
+    ##    babysex bhead blength   bwt delwt fincome frace gaweeks malform menarche
+    ##    <fct>   <int>   <int> <int> <int>   <int> <fct>   <dbl> <fct>      <int>
+    ##  1 2          34      51  3629   177      35 1        39.9 0             13
+    ##  2 1          34      48  3062   156      65 2        25.9 0             14
+    ##  3 2          36      50  3345   148      85 1        39.9 0             12
+    ##  4 1          34      52  3062   157      55 1        40   0             14
+    ##  5 2          34      52  3374   156       5 1        41.6 0             13
+    ##  6 1          33      52  3374   129      55 1        40.7 0             12
+    ##  7 2          33      46  2523   126      96 2        40.3 0             14
+    ##  8 2          33      49  2778   140       5 1        37.4 0             12
+    ##  9 1          36      52  3515   146      85 1        40.3 0             11
+    ## 10 1          33      50  3459   169      75 2        40.7 0             12
+    ## # ... with 4,332 more rows, and 11 more variables: mheight <int>,
+    ## #   momage <int>, mrace <fct>, parity <int>, pnumlbw <int>, pnumsga <int>,
+    ## #   ppbmi <dbl>, ppwt <int>, smoken <dbl>, wtgain <int>, pred <dbl>
+
+``` r
+birth_data %>% 
+  modelr::add_residuals(fit_model) %>% 
+  modelr::add_predictions(fit_model) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+   geom_point(alpha = 0.3) +
+  labs(
+      x = "Predicted Value",
+      y = "Residual",
+      title = "Model residuals against predictied values"
+  )
+```
+
+![](hw6_files/figure-markdown_github/unnamed-chunk-13-1.png)
+
+### Comparing two model
+
+``` r
+fit_compare1 = 
+  lm(bwt ~  blength + gaweeks, data = birth_data)
+
+summary(fit_compare1)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = bwt ~ blength + gaweeks, data = birth_data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1709.6  -215.4   -11.4   208.2  4188.8 
+    ## 
+    ## Coefficients:
+    ##              Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept) -4347.667     97.958  -44.38   <2e-16 ***
+    ## blength       128.556      1.990   64.60   <2e-16 ***
+    ## gaweeks        27.047      1.718   15.74   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 333.2 on 4339 degrees of freedom
+    ## Multiple R-squared:  0.5769, Adjusted R-squared:  0.5767 
+    ## F-statistic:  2958 on 2 and 4339 DF,  p-value: < 2.2e-16
+
+``` r
+fit_compare2 =
+  lm(bwt ~  bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = birth_data)
+
+summary(fit_compare2)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = bwt ~ bhead + blength + babysex + bhead * blength + 
+    ##     bhead * babysex + blength * babysex + bhead * blength * babysex, 
+    ##     data = birth_data)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1132.99  -190.42   -10.33   178.63  2617.96 
+    ## 
+    ## Coefficients:
+    ##                          Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)            -7176.8170  1264.8397  -5.674 1.49e-08 ***
+    ## bhead                    181.7956    38.0542   4.777 1.84e-06 ***
+    ## blength                  102.1269    26.2118   3.896 9.92e-05 ***
+    ## babysex2                6374.8684  1677.7669   3.800 0.000147 ***
+    ## bhead:blength             -0.5536     0.7802  -0.710 0.478012    
+    ## bhead:babysex2          -198.3932    51.0917  -3.883 0.000105 ***
+    ## blength:babysex2        -123.7729    35.1185  -3.524 0.000429 ***
+    ## bhead:blength:babysex2     3.8781     1.0566   3.670 0.000245 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 287.7 on 4334 degrees of freedom
+    ## Multiple R-squared:  0.6849, Adjusted R-squared:  0.6844 
+    ## F-statistic:  1346 on 7 and 4334 DF,  p-value: < 2.2e-16
+
+Use cross validation to compare three models.
+
+``` r
+cv_df = 
+  crossv_mc(birth_data, 100) %>% 
+  mutate(train = map(train, as_tibble),
+         test = map(test, as_tibble))
+
+cv_df = 
+  cv_df %>% 
+  mutate(fit_model    = map(train, ~lm(bwt ~ babysex + bhead + blength + delwt + gaweeks + mrace + parity + smoken, data = .x)),
+         fit_compare1 = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+         fit_compare2 = map(train, ~lm(bwt ~  bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = .x))) %>% 
+  mutate(rmse_model    = map2_dbl(fit_model, test, ~rmse(model = .x, data = .y)),
+         rmse_compare1 = map2_dbl(fit_compare1, test, ~rmse(model = .x, data = .y)),
+         rmse_compare2 = map2_dbl(fit_compare2, test, ~rmse(model = .x, data = .y)))
+```
+
+Plot the standard error of the three models to compare the fitting.
+
+``` r
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  gather(key = model, value = rmse) %>% 
+  mutate(model = str_replace(model, "rmse_", ""),
+         model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()
+```
+
+![](hw6_files/figure-markdown_github/unnamed-chunk-17-1.png)

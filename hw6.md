@@ -99,6 +99,7 @@ glm_result %>%
   mutate(city_state = fct_reorder(city_state, OR)) %>% 
   ggplot(aes(x = city_state, y = OR, ymin = conf.low, ymax = conf.high, color = city_state)) +
   geom_point() +
+  geom_hline(yintercept = 1, alpha = 0.3) +
   geom_errorbar() +
   labs(
     title = "Plot of Odd Ratio and CI for each city",
@@ -110,7 +111,11 @@ glm_result %>%
         axis.text.x = element_text(angle = 90, hjust = 1)) 
 ```
 
-![](hw6_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](hw6_files/figure-markdown_github/unnamed-chunk-5-1.png) Comment:
+
+The adjusted odds ratio means that the ratio of homicides are solved for non-whites compared to whites. So, the adjusted odds ration less than 1 means that less homicides are solved for non-whites than whites.
+
+In the plot, most of the cities have adjusted odds ration less than 1 except for Tampa, Durham and Birmingham. This shows that most big cities in the US do not have a different treatment of solving himicides comparing to non-whites and whites.
 
 Problem 2
 ---------
